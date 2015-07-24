@@ -9,9 +9,13 @@
     "jscs": "^1.13.1",
     "mocha": "^2.2.5"
   },
+  "scripts" : {
+  "start" : "node server.js"
+  },
   "name": "restful_s3",
   "version": "0.1.0",
   "dependencies": {
+    "body-parser": "^1.13.2",
     "express": "^4.13.1",
     "mongoose": "^4.0.8"
   }

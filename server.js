@@ -2,6 +2,7 @@
 //Express app
 var express = require("express");
 var app = express();
+var bodyParser = require("body-parser");
 
 //DB connection
 var mongoose = require("mongoose");
@@ -14,8 +15,11 @@ db.on("error", function(err) {
 });
 
 //Route mounting
+var usersRouter = express.Router();
+require("./routes/users-routes")(usersRouter);
 
-
+app.use(bodyParser.json());
+app.use("/users", usersRouter);
 
 //Start server
 var server = app.listen(3000, function() {
@@ -27,6 +31,6 @@ var server = app.listen(3000, function() {
 //   db: db
 // };
 module.exports.app = app;
-module.exports.server = server;
+module.exports.serverInst = server;
 module.exports.db = db;
 
