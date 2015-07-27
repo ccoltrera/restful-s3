@@ -1,4 +1,8 @@
 "use strict";
+var AWS = require("aws-sdk");
+AWS.config.region = 'us-west-2';
+var s3 = new AWS.S3();
+
 var server = require(__dirname + "/../server");
 var app = server.app;
 var db = server.db;
@@ -32,12 +36,12 @@ describe("RESTful API with S3 Integration: ", function() {
       done();
     });
   });
-  // Wipe DB before each test
-  beforeEach(function(done) {
-    db.db.dropDatabase(function() {
-      // Add oldUser to the DB
-      User.create(oldUser, function(err, user) {
-        oldFile.userId = user._id;
+  before(function(done) {
+    // Add oldUser to the DB
+    User.create(oldUser, function(err, user) {
+      oldFile.userId = user._id;
+      // Ensure indexing is done, so that unique usernames will be properly enforced
+      User.ensureIndexes(function(err) {
         // Add oldFile as oldUser's file
         File.create(oldFile, function(err, file) {
           done();
@@ -45,12 +49,37 @@ describe("RESTful API with S3 Integration: ", function() {
       });
     });
   });
-  //  Shut down server and DB connection
-  after(function(done) {
-    db.close();
-    serverInst.close();
-    done();
+  // Add sub-bucket for user created above
+  before(function(done) {
+    s3.createBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
+      if (!err) {
+        done();
+      }
+    });
   });
+
+  // Wipe DB after the tests
+  // Shut down server and DB connection
+  after(function(done) {
+    db.db.dropDatabase(function() {
+      db.close();
+      serverInst.close();
+      done();
+    });
+  });
+  // Delete oldUser sub-bucket created for the tests
+  after(function(done) {
+    s3.deleteBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
+      done();
+    });
+  });
+  // Delete newUser sub-bucket created for the tests
+  after(function(done) {
+    s3.deleteBucket({Bucket: "colincolt/" + newUser.username}, function(err, data) {
+      done();
+    });
+  });
+
   describe("/users", function() {
     //GET request to /users
     describe("GET", function() {
@@ -67,7 +96,7 @@ describe("RESTful API with S3 Integration: ", function() {
     });
     //POST request to /users
     describe("POST", function() {
-      it("should take a properly JSON with unique username, persist in DB, and return the persisted User with status 201 (created)", function(done) {
+      it("should take JSON with unique username, persist in DB, and return the persisted User with status 201 (created)", function(done) {
         chai.request("http://localhost:3000")
           .post("/users")
           .send(newUser)
@@ -102,7 +131,7 @@ describe("RESTful API with S3 Integration: ", function() {
         });
         it("should send 404 if no such user", function(done) {
           chai.request("http://localhost:3000")
-            .get("/users/garrettdieck")
+            .get("/users/marccolt")
             .end(function(err,res) {
               expect(res).to.have.status(404);
               done();
@@ -111,7 +140,7 @@ describe("RESTful API with S3 Integration: ", function() {
       });
       //PUT request to /users/:user
       describe("PUT", function() {
-
+        it("should ")
       });
       //DELETE request to /users/:user
       describe("DELETE", function() {
