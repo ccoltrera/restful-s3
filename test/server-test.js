@@ -1,4 +1,6 @@
 "use strict";
+var fs = require("fs");
+
 var AWS = require("aws-sdk");
 AWS.config.region = 'us-west-2';
 var s3 = new AWS.S3();
@@ -18,15 +20,15 @@ var expect = chai.expect;
 chai.use(chaiHttp);
 
 var oldUser = {
-  username: "colincolt"
+  _id: "oldUser"
 };
 
 var newUser = {
-  username: "garrettdieck"
+  _id: "newUser"
 }
 
 var oldFile = {
-  name: "potato"
+  name: "oldFile"
 }
 
 describe("RESTful API with S3 Integration: ", function() {
@@ -40,10 +42,13 @@ describe("RESTful API with S3 Integration: ", function() {
     // Add oldUser to the DB
     User.create(oldUser, function(err, user) {
       oldFile.userId = user._id;
-      // Ensure indexing is done, so that unique usernames will be properly enforced
+      // Ensure indexing is done, so that unique _ids will be properly enforced
       User.ensureIndexes(function(err) {
         // Add oldFile as oldUser's file
+        oldFile["_userId"] = user["_id"];
         File.create(oldFile, function(err, file) {
+          // Link oldUser to oldFile
+          //User.update({_id: user._id}, { $set: {  })
           done();
         });
       });
@@ -51,10 +56,28 @@ describe("RESTful API with S3 Integration: ", function() {
   });
   // Add sub-bucket for user created above
   before(function(done) {
-    s3.createBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
+    s3.createBucket({Bucket: "colincolt/" + oldUser._id}, function(err, data) {
       if (!err) {
         done();
       }
+    });
+  });
+  // Create file for testing
+  before(function(done) {
+    fs.writeFile("./oldFile.json", "potatopotatopotato", function(err) {
+      if(!err) done();
+    });
+  });
+  // Upload file for testing
+  before(function(done) {
+    var oldFileStream = fs.createReadStream("./oldFile.json");
+    s3.putObject({
+      Bucket: "colincolt/" + oldUser._id,
+      Key: "oldFile",
+      Body: oldFileStream
+    }, function(err, data) {
+      console.log("INSIDE")
+      if(!err) done();
     });
   });
 
@@ -67,16 +90,31 @@ describe("RESTful API with S3 Integration: ", function() {
       done();
     });
   });
+  // Delete oldFile in oldUser's bucket
+  after(function(done) {
+    s3.deleteObject({
+      Bucket: "colincolt/" + oldUser._id,
+      Key: "oldFile"
+    }, function(err, data) {
+      if (!err) done();
+    });
+  });
   // Delete oldUser sub-bucket created for the tests
   after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
+    s3.deleteBucket({Bucket: "colincolt/" + oldUser._id}, function(err, data) {
       done();
     });
   });
   // Delete newUser sub-bucket created for the tests
   after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/" + newUser.username}, function(err, data) {
+    s3.deleteBucket({Bucket: "colincolt/" + newUser._id}, function(err, data) {
       done();
+    });
+  });
+  // Unlink file created for tests
+  after(function(done) {
+    fs.unlink("oldFile.json", function(err) {
+      if (!err) done();
     });
   });
 
@@ -89,25 +127,25 @@ describe("RESTful API with S3 Integration: ", function() {
           .end(function(err, res) {
             expect(res).to.have.status(200);
             expect(res).to.be.json;
-            expect(res.body[0]["username"]).to.eql(oldUser["username"]);
+            expect(res.body[0]["_id"]).to.eql(oldUser["_id"]);
             done();
           });
       });
     });
     //POST request to /users
     describe("POST", function() {
-      it("should take JSON with unique username, persist in DB, and return the persisted User with status 201 (created)", function(done) {
+      it("should take JSON with unique _id, persist in DB, create S3 bucket, and return the persisted User with status 201 (created)", function(done) {
         chai.request("http://localhost:3000")
           .post("/users")
           .send(newUser)
           .end(function(err, res) {
             expect(res).to.have.status(201);
             expect(res).to.be.json;
-            expect(res.body["username"]).to.eql(newUser["username"]);
+            expect(res.body["_id"]).to.eql(newUser["_id"]);
             done();
           })
       });
-      it("should respond with 409 (conflict) on duplicate username", function(done) {
+      it("should respond with 409 (conflict) on duplicate _id", function(done) {
         chai.request("http://localhost:3000")
           .post("/users")
           .send(oldUser)
@@ -122,16 +160,16 @@ describe("RESTful API with S3 Integration: ", function() {
       describe("GET", function() {
         it("should send an existent specified user as JSON", function(done) {
           chai.request("http://localhost:3000")
-            .get("/users/colincolt")
+            .get("/users/oldUser")
             .end(function(err,res) {
               expect(res).to.have.status(200);
-              expect(res.body["username"]).to.eql(oldUser["username"]);
+              expect(res.body["_id"]).to.eql(oldUser["_id"]);
               done();
             });
         });
         it("should send 404 if no such user", function(done) {
           chai.request("http://localhost:3000")
-            .get("/users/marccolt")
+            .get("/users/fakeUser")
             .end(function(err,res) {
               expect(res).to.have.status(404);
               done();
@@ -140,11 +178,15 @@ describe("RESTful API with S3 Integration: ", function() {
       });
       //PUT request to /users/:user
       describe("PUT", function() {
-        it("should ")
+        it("should rename a user in the database, and rename their bucket on S3", function(done) {
+
+        });
       });
       //DELETE request to /users/:user
       describe("DELETE", function() {
+        it("should delete a user, their bucket, and all their Files in the database", function(done) {
 
+        });
       });
 
       describe("/files", function() {

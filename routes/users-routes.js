@@ -30,8 +30,8 @@ module.exports = function(router) {
             res.status(500).json({msg: "server error"});
           }
         } else {
-          //Create the bucket
-          s3.createBucket({Bucket: "colincolt/" + user.username}, function(err, data) {
+          //Create the S3 bucket
+          s3.createBucket({Bucket: "colincolt/" + user._id}, function(err, data) {
             if (err) {
               res.status(500).json({msg: "server error"});
             } else {
@@ -44,7 +44,9 @@ module.exports = function(router) {
   // methods for /users/:user
   router.route("/:user")
     .get(function(req, res) {
-      User.findOne({username: req.params.user}, function(err, user) {
+      User.findOne({_id: req.params.user})
+        .populate("_files")
+        .exec(function(err, user) {
         if (err) {
           res.status(500).json({msg: "server error"});
         } else {
