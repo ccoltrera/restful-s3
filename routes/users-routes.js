@@ -57,5 +57,63 @@ module.exports = function(router) {
           }
         }
       });
-    });
+    })
+    .delete(function(req, res) {
+      User.findOne({_id: req.params.user})
+        .populate("_files")
+        .exec(function(err, user) {
+          if (err) {
+            res.status(500).json({msg: "server error"});
+          } else {
+            if (user) {
+              var s3params = {
+                Bucket: "colincolt/" + user._id,
+                Delete: {
+                  Objects:[]
+                }
+              };
+              // Check if user has files to be deleted
+              if (user._files.length === 0) {
+                s3.deleteBucket({Bucket: "colincolt/" + user._id}, function(err) {
+                  if (err) res.status(500).json({msg: "server error"});
+                  else {
+                    User.remove({_id: user._id}, function(err) {
+                      res.json(user);
+                    });
+                  }
+                });
+              } else {
+                console.log(user)
+                // Iterate over file names, adding them to s3params
+                for (file in user._files) {
+                  s3params["Delete"]["Objects"].push({
+                    Key: file.name
+                  });
+                }
+                s3.deleteObjects(s3params, function(err, data) {
+                  if (err) res.status(500).json({msg: "server error"});
+                  else {
+                    s3.deleteBucket({Bucket: "colincolt/" + user._id}, function(err) {
+                      if (err) res.status(500).json({msg: "server error"});
+                      else {
+                        File.remove({_userId: user._id}, function(err) {
+                          if (err) res.status(500).json({msg: "server error"});
+                          else {
+                            User.remove({_id: user._id}, function(err) {
+                              res.json(user);
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+
+            } else {
+              res.status(404).json({msg: "no such user"});
+            }
+          }
+        })
+    })
 };

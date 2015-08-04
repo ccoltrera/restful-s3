@@ -185,7 +185,13 @@ describe("RESTful API with S3 Integration: ", function() {
       //DELETE request to /users/:user
       describe("DELETE", function() {
         it("should delete a user, their bucket, and all their Files in the database", function(done) {
-
+          chai.request("http://localhost:3000")
+            .del("/users/oldUser")
+            .end(function(err,res) {
+              expect(res).to.have.status(200);
+              expect(res.body["_id"]).to.eql(oldUser["_id"]);
+              done();
+            });
         });
       });
 
