@@ -25,11 +25,15 @@ var oldUser = {
 
 var newUser = {
   _id: "newUser"
-}
+};
+
+var userToRename = {
+  _id: "userToRename"
+};
 
 var oldFile = {
   name: "oldFile"
-}
+};
 
 describe("RESTful API with S3 Integration: ", function() {
   // Ensure tests wait until DB connection is open
@@ -81,6 +85,18 @@ describe("RESTful API with S3 Integration: ", function() {
     });
   });
 
+  before(function(done) {
+    // Add userToRename to the DB
+    User.create(userToRename, function(err, user) {
+      //Add bucket
+      s3.createBucket({Bucket: "colincolt/" + userToRename._id}, function(err, data) {
+        if (!err) {
+          done();
+        }
+      });
+    });
+  });
+
   // Wipe DB after the tests
   // Shut down server and DB connection
   after(function(done) {
@@ -108,6 +124,12 @@ describe("RESTful API with S3 Integration: ", function() {
   // Delete newUser sub-bucket created for the tests
   after(function(done) {
     s3.deleteBucket({Bucket: "colincolt/" + newUser._id}, function(err, data) {
+      done();
+    });
+  });
+  // Delete renamedUser sub-bucket created for the tests
+  after(function(done) {
+    s3.deleteBucket({Bucket: "colincolt/renamedUser"}, function(err, data) {
       done();
     });
   });
@@ -179,7 +201,14 @@ describe("RESTful API with S3 Integration: ", function() {
       //PUT request to /users/:user
       describe("PUT", function() {
         it("should rename a user in the database, and rename their bucket on S3", function(done) {
-
+          chai.request("http://localhost:3000")
+            .put("/users/userToRename")
+            .send({_id: "renamedUser"})
+            .end(function(err,res) {
+              expect(res).to.have.status(200);
+              expect(res.body["_id"]).to.eql("renamedUser");
+              done();
+            });
         });
       });
       //DELETE request to /users/:user

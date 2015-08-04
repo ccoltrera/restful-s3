@@ -7,6 +7,9 @@ var s3 = new AWS.S3();
 var User = require("../models/User");
 var File = require("../models/File");
 
+var EventEmitter = require("events").EventEmitter;
+var ee = new EventEmitter();
+
 module.exports = function(router) {
   // methods for /users
   router.route("/")
@@ -58,6 +61,15 @@ module.exports = function(router) {
         }
       });
     })
+    .put(function(req, res) {
+
+      ee.on("finalFileCopy", function() {
+
+      });
+      ee.on("finalFileDelete", function() {
+
+      });
+    })
     .delete(function(req, res) {
       User.findOne({_id: req.params.user})
         .populate("_files")
@@ -89,7 +101,6 @@ module.exports = function(router) {
                     Key: user._id + "/" + user._files[i].name
                   });
                 }
-                console.log(s3params.Delete.Objects);
                 s3.deleteObjects(s3params, function(err, data) {
                   if (err) res.status(500).json({msg: "server error"});
                   else {
