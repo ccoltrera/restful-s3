@@ -63,23 +63,22 @@ describe("RESTful API with S3 Integration: ", function() {
     });
   });
 
-  // before(function(done) {
-  //   // Add userToRename to the DB
-  //   User.create(userToRename, function(err, user) {
-  //     fileToRename._userId = user._id;
-  //     // Ensure indexing is done, so that unique _ids will be properly enforced
-  //     User.ensureIndexes(function(err) {
-  //       // Add fileToRename as userToRename's file
-  //       File.create(fileToRename, function(err, file) {
-  //         // Link userToRename to fileToRename
-  //         User.update({_id: user._id}, { $push: { _files: file._id }}, function(err) {
-  //           console.log(err)
-  //           if (!err) done();
-  //         });
-  //       });
-  //     });
-  //   });
-  // });
+  before(function(done) {
+    // Add userToRename to the DB
+    User.create(userToRename, function(err, user) {
+      fileToRename._userId = user._id;
+      // Ensure indexing is done, so that unique _ids will be properly enforced
+      User.ensureIndexes(function(err) {
+        // Add fileToRename as userToRename's file
+        File.create(fileToRename, function(err, file) {
+          // Link userToRename to fileToRename
+          User.update({_id: user._id}, { $push: { _files: file._id }}, function(err) {
+            if (!err) done();
+          });
+        });
+      });
+    });
+  });
 
   // Create file for delete testing
   before(function(done) {
@@ -114,13 +113,6 @@ describe("RESTful API with S3 Integration: ", function() {
       Body: fileStream
     }, function(err, data) {
       if(!err) done();
-    });
-  });
-
-  before(function(done) {
-    // Add userToRename to the DB
-    User.create(userToRename, function(err, user) {
-      if (!err) done();
     });
   });
 
