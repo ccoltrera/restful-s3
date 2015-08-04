@@ -31,6 +31,10 @@ var userToRename = {
   username: "userToRename"
 };
 
+var fileToRename = {
+  name: "fileToRename"
+};
+
 var oldFile = {
   name: "oldFile"
 };
@@ -59,19 +63,55 @@ describe("RESTful API with S3 Integration: ", function() {
     });
   });
 
-  // Create file for testing
+  // before(function(done) {
+  //   // Add userToRename to the DB
+  //   User.create(userToRename, function(err, user) {
+  //     fileToRename._userId = user._id;
+  //     // Ensure indexing is done, so that unique _ids will be properly enforced
+  //     User.ensureIndexes(function(err) {
+  //       // Add fileToRename as userToRename's file
+  //       File.create(fileToRename, function(err, file) {
+  //         // Link userToRename to fileToRename
+  //         User.update({_id: user._id}, { $push: { _files: file._id }}, function(err) {
+  //           console.log(err)
+  //           if (!err) done();
+  //         });
+  //       });
+  //     });
+  //   });
+  // });
+
+  // Create file for delete testing
   before(function(done) {
     fs.writeFile("./oldFile.json", "potatopotatopotato", function(err) {
       if(!err) done();
     });
   });
-  // Upload file for testing
+  // Upload file for delete testing
   before(function(done) {
     var oldFileStream = fs.createReadStream("./oldFile.json");
     s3.putObject({
       Bucket: "colincolt",
       Key: oldUser.username + "/oldFile",
-      Body: "oldFileStream"
+      Body: oldFileStream
+    }, function(err, data) {
+      if(!err) done();
+    });
+  });
+
+  // Create file for rename testing
+  before(function(done) {
+    fs.writeFile("./fileToRename.json", "potatopotatopotato", function(err) {
+      if(!err) done();
+    });
+  });
+  // Upload file for rename testing
+  before(function(done) {
+    var fileStream = fs.createReadStream("./fileToRename.json");
+    s3.putObject({
+      Bucket: "colincolt",
+      Key: userToRename.username + "/fileToRename",
+      Body: fileStream
     }, function(err, data) {
       if(!err) done();
     });
@@ -93,20 +133,29 @@ describe("RESTful API with S3 Integration: ", function() {
       done();
     });
   });
-  // Delete oldFile
-  // after(function(done) {
-  //   s3.deleteObject({
-  //     Bucket: "colincolt",
-  //     Key: oldUser.username + "/oldFile"
-  //   }, function(err, data) {
-  //     if (!err) {
-  //       done()
-  //     };
-  //   });
-  // });
+
+  // Delete fileToRename
+  after(function(done) {
+    s3.deleteObject({
+      Bucket: "colincolt",
+      Key: "renamedUser/oldFile"
+    }, function(err, data) {
+      if (!err) {
+        done()
+      };
+    });
+  });
   // Unlink file created for tests
   after(function(done) {
     fs.unlink("oldFile.json", function(err) {
+      if (!err) {
+        done();
+      }
+    });
+  });
+  // Unlink file to rename created for tests
+  after(function(done) {
+    fs.unlink("fileToRename.json", function(err) {
       if (!err) {
         done();
       }

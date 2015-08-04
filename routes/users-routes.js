@@ -37,13 +37,17 @@ module.exports = function(router) {
       var newUsername = req.body.username;
       var filesToMove = [];
 
-      User.find({username: oldUsername}, function(err, userDoc) {
+      User.findOne({username: req.params.user})
+        .populate("_files")
+        .exec(function(err, user) {
+          filesToMove = user._files;
+          console.log(filesToMove)
+          User.update({username: oldUsername}, {username: newUsername}, function(err) {
+            if (err) res.status(500).json({msg: "server error"});
+            else { ee.emit("userRenamed") }
+          });
+        });
 
-      })
-      User.update({username: oldUsername}, {username: newUsername}, function(err) {
-        if (err) res.status(500).json({msg: "server error"});
-        else { ee.emit("userRenamed") }
-      });
 
       ee.on("userRenamed", function() {
         console.log("userRenamed")
