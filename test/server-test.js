@@ -58,14 +58,7 @@ describe("RESTful API with S3 Integration: ", function() {
       });
     });
   });
-  // Add sub-bucket for user created above
-  before(function(done) {
-    s3.createBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
-      if (!err) {
-        done();
-      }
-    });
-  });
+
   // Create file for testing
   before(function(done) {
     fs.writeFile("./oldFile.json", "potatopotatopotato", function(err) {
@@ -76,11 +69,10 @@ describe("RESTful API with S3 Integration: ", function() {
   before(function(done) {
     var oldFileStream = fs.createReadStream("./oldFile.json");
     s3.putObject({
-      Bucket: "colincolt/" + oldUser.username,
-      Key: "oldFile",
-      Body: oldFileStream
+      Bucket: "colincolt",
+      Key: oldUser.username + "/oldFile",
+      Body: "oldFileStream"
     }, function(err, data) {
-      console.log("INSIDE")
       if(!err) done();
     });
   });
@@ -88,12 +80,7 @@ describe("RESTful API with S3 Integration: ", function() {
   before(function(done) {
     // Add userToRename to the DB
     User.create(userToRename, function(err, user) {
-      //Add bucket
-      s3.createBucket({Bucket: "colincolt/" + userToRename.username}, function(err, data) {
-        if (!err) {
-          done();
-        }
-      });
+      if (!err) done();
     });
   });
 
@@ -106,37 +93,23 @@ describe("RESTful API with S3 Integration: ", function() {
       done();
     });
   });
-  // Delete oldFile in oldUser's bucket
-  after(function(done) {
-    s3.deleteObject({
-      Bucket: "colincolt/" + oldUser.username,
-      Key: "oldFile"
-    }, function(err, data) {
-      if (!err) done();
-    });
-  });
-  // Delete oldUser sub-bucket created for the tests
-  after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
-      done();
-    });
-  });
-  // Delete newUser sub-bucket created for the tests
-  after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/" + newUser.username}, function(err, data) {
-      done();
-    });
-  });
-  // Delete renamedUser sub-bucket created for the tests
-  after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/renamedUser"}, function(err, data) {
-      done();
-    });
-  });
+  // Delete oldFile
+  // after(function(done) {
+  //   s3.deleteObject({
+  //     Bucket: "colincolt",
+  //     Key: oldUser.username + "/oldFile"
+  //   }, function(err, data) {
+  //     if (!err) {
+  //       done()
+  //     };
+  //   });
+  // });
   // Unlink file created for tests
   after(function(done) {
     fs.unlink("oldFile.json", function(err) {
-      if (!err) done();
+      if (!err) {
+        done();
+      }
     });
   });
 
