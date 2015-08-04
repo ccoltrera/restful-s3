@@ -11,39 +11,10 @@ var EventEmitter = require("events").EventEmitter;
 var ee = new EventEmitter();
 
 module.exports = function(router) {
-  // methods for /users
-  router.route("/")
-    .get(function(req, res) {
-      User.find({}, function(err, users) {
-        if (err) {
-          res.status(500).json({msg: "server error"});
-        } else {
-          res.json(users);
-        }
-      });
-    })
-    .post(function(req, res) {
-      // Attempt to create user with data received
-      User.create(req.body, function(err, user) {
-        if (err) {
-          // Check for 'E11000' (duplicate key error)
-          if (err.code === 11000) {
-            res.status(409).json({msg: "username already exists"});
-          } else {
-            res.status(500).json({msg: "server error"});
-          }
-        } else {
-          //Create the S3 bucket
-          s3.createBucket({Bucket: "colincolt/" + user._id}, function(err, data) {
-            if (err) {
-              res.status(500).json({msg: "server error"});
-            } else {
-              res.status(201).json(user);
-            }
-          });
-        }
-      });
-    });
+  // methods for /users/:user/files/:file
+
+  // methods for /users/:user/files
+
   // methods for /users/:user
   router.route("/:user")
     .get(function(req, res) {
@@ -125,6 +96,41 @@ module.exports = function(router) {
               res.status(404).json({msg: "no such user"});
             }
           }
-        })
+        });
+    });
+
+  // methods for /users
+  router.route("/")
+    .get(function(req, res) {
+      User.find({}, function(err, users) {
+        if (err) {
+          res.status(500).json({msg: "server error"});
+        } else {
+          res.json(users);
+        }
+      });
     })
+    .post(function(req, res) {
+      // Attempt to create user with data received
+      User.create(req.body, function(err, user) {
+        if (err) {
+          // Check for 'E11000' (duplicate key error)
+          if (err.code === 11000) {
+            res.status(409).json({msg: "username already exists"});
+          } else {
+            res.status(500).json({msg: "server error"});
+          }
+        } else {
+          //Create the S3 bucket
+          s3.createBucket({Bucket: "colincolt/" + user._id}, function(err, data) {
+            if (err) {
+              res.status(500).json({msg: "server error"});
+            } else {
+              res.status(201).json(user);
+            }
+          });
+        }
+      });
+    });
+
 };
