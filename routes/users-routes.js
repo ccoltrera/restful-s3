@@ -74,7 +74,7 @@ module.exports = function(router) {
               };
               // Check if user has files to be deleted
               if (user._files.length === 0) {
-                s3.deleteBucket({Bucket: "colincolt/" + user._id}, function(err) {
+                s3.deleteBucket({Bucket: "colincolt"}, function(err) {
                   if (err) res.status(500).json({msg: "server error"});
                   else {
                     User.remove({_id: user._id}, function(err) {
@@ -83,13 +83,13 @@ module.exports = function(router) {
                   }
                 });
               } else {
-                console.log(user)
                 // Iterate over file names, adding them to s3params
-                for (file in user._files) {
+                for (var i = 0; i< user._files.length; i++) {
                   s3params["Delete"]["Objects"].push({
-                    Key: file.name
+                    Key: user._id + "/" + user._files[i].name
                   });
                 }
+                console.log(s3params.Delete.Objects);
                 s3.deleteObjects(s3params, function(err, data) {
                   if (err) res.status(500).json({msg: "server error"});
                   else {

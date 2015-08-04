@@ -41,15 +41,15 @@ describe("RESTful API with S3 Integration: ", function() {
   before(function(done) {
     // Add oldUser to the DB
     User.create(oldUser, function(err, user) {
-      oldFile.userId = user._id;
+      oldFile._userId = user._id;
       // Ensure indexing is done, so that unique _ids will be properly enforced
       User.ensureIndexes(function(err) {
         // Add oldFile as oldUser's file
-        oldFile["_userId"] = user["_id"];
         File.create(oldFile, function(err, file) {
           // Link oldUser to oldFile
-          //User.update({_id: user._id}, { $set: {  })
-          done();
+          User.update({_id: user._id}, { $push: { _files: file._id }}, function(err) {
+            if (!err) done();
+          });
         });
       });
     });

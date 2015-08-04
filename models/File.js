@@ -4,7 +4,7 @@ var fileSchema = new mongoose.Schema({
   //Require name property, validate with regexp
   name: {type: String, required: true, validate: /\w+-?\w+/},
   //Require ownerId to match _id of existent User
-  _userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true}
+  _userId: {type: mongoose.Schema.Types.String, ref: "User", required: true}
 });
 
 //Enforce only a single File with same name and ownerId
