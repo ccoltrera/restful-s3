@@ -1,7 +1,7 @@
 var mongoose = require("mongoose");
 
 var userSchema = new mongoose.Schema({
-  _id: {type: String, validate: /\w\w+/},
+  username: {type: String, unique: true, validate: /\w\w+/},
   // File _id as an array
   _files: [{type: mongoose.Schema.Types.ObjectId, ref: "File"}]
 });

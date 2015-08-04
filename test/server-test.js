@@ -20,15 +20,15 @@ var expect = chai.expect;
 chai.use(chaiHttp);
 
 var oldUser = {
-  _id: "oldUser"
+  username: "oldUser"
 };
 
 var newUser = {
-  _id: "newUser"
+  username: "newUser"
 };
 
 var userToRename = {
-  _id: "userToRename"
+  username: "userToRename"
 };
 
 var oldFile = {
@@ -60,7 +60,7 @@ describe("RESTful API with S3 Integration: ", function() {
   });
   // Add sub-bucket for user created above
   before(function(done) {
-    s3.createBucket({Bucket: "colincolt/" + oldUser._id}, function(err, data) {
+    s3.createBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
       if (!err) {
         done();
       }
@@ -76,7 +76,7 @@ describe("RESTful API with S3 Integration: ", function() {
   before(function(done) {
     var oldFileStream = fs.createReadStream("./oldFile.json");
     s3.putObject({
-      Bucket: "colincolt/" + oldUser._id,
+      Bucket: "colincolt/" + oldUser.username,
       Key: "oldFile",
       Body: oldFileStream
     }, function(err, data) {
@@ -89,7 +89,7 @@ describe("RESTful API with S3 Integration: ", function() {
     // Add userToRename to the DB
     User.create(userToRename, function(err, user) {
       //Add bucket
-      s3.createBucket({Bucket: "colincolt/" + userToRename._id}, function(err, data) {
+      s3.createBucket({Bucket: "colincolt/" + userToRename.username}, function(err, data) {
         if (!err) {
           done();
         }
@@ -109,7 +109,7 @@ describe("RESTful API with S3 Integration: ", function() {
   // Delete oldFile in oldUser's bucket
   after(function(done) {
     s3.deleteObject({
-      Bucket: "colincolt/" + oldUser._id,
+      Bucket: "colincolt/" + oldUser.username,
       Key: "oldFile"
     }, function(err, data) {
       if (!err) done();
@@ -117,13 +117,13 @@ describe("RESTful API with S3 Integration: ", function() {
   });
   // Delete oldUser sub-bucket created for the tests
   after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/" + oldUser._id}, function(err, data) {
+    s3.deleteBucket({Bucket: "colincolt/" + oldUser.username}, function(err, data) {
       done();
     });
   });
   // Delete newUser sub-bucket created for the tests
   after(function(done) {
-    s3.deleteBucket({Bucket: "colincolt/" + newUser._id}, function(err, data) {
+    s3.deleteBucket({Bucket: "colincolt/" + newUser.username}, function(err, data) {
       done();
     });
   });
@@ -149,25 +149,25 @@ describe("RESTful API with S3 Integration: ", function() {
           .end(function(err, res) {
             expect(res).to.have.status(200);
             expect(res).to.be.json;
-            expect(res.body[0]["_id"]).to.eql(oldUser["_id"]);
+            expect(res.body[0]["username"]).to.eql(oldUser["username"]);
             done();
           });
       });
     });
     //POST request to /users
     describe("POST", function() {
-      it("should take JSON with unique _id, persist in DB, create S3 bucket, and return the persisted User with status 201 (created)", function(done) {
+      it("should take JSON with unique username, persist in DB, create S3 bucket, and return the persisted User with status 201 (created)", function(done) {
         chai.request("http://localhost:3000")
           .post("/users")
           .send(newUser)
           .end(function(err, res) {
             expect(res).to.have.status(201);
             expect(res).to.be.json;
-            expect(res.body["_id"]).to.eql(newUser["_id"]);
+            expect(res.body["username"]).to.eql(newUser["username"]);
             done();
           })
       });
-      it("should respond with 409 (conflict) on duplicate _id", function(done) {
+      it("should respond with 409 (conflict) on duplicate username", function(done) {
         chai.request("http://localhost:3000")
           .post("/users")
           .send(oldUser)
@@ -185,7 +185,7 @@ describe("RESTful API with S3 Integration: ", function() {
             .get("/users/oldUser")
             .end(function(err,res) {
               expect(res).to.have.status(200);
-              expect(res.body["_id"]).to.eql(oldUser["_id"]);
+              expect(res.body["username"]).to.eql(oldUser["username"]);
               done();
             });
         });
@@ -203,10 +203,10 @@ describe("RESTful API with S3 Integration: ", function() {
         it("should rename a user in the database, and rename their bucket on S3", function(done) {
           chai.request("http://localhost:3000")
             .put("/users/userToRename")
-            .send({_id: "renamedUser"})
+            .send({username: "renamedUser"})
             .end(function(err,res) {
               expect(res).to.have.status(200);
-              expect(res.body["_id"]).to.eql("renamedUser");
+              expect(res.body["username"]).to.eql("renamedUser");
               done();
             });
         });
@@ -218,7 +218,7 @@ describe("RESTful API with S3 Integration: ", function() {
             .del("/users/oldUser")
             .end(function(err,res) {
               expect(res).to.have.status(200);
-              expect(res.body["_id"]).to.eql(oldUser["_id"]);
+              expect(res.body["username"]).to.eql(oldUser["username"]);
               done();
             });
         });

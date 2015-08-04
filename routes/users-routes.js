@@ -18,7 +18,7 @@ module.exports = function(router) {
   // methods for /users/:user
   router.route("/:user")
     .get(function(req, res) {
-      User.findOne({_id: req.params.user})
+      User.findOne({username: req.params.user})
         .populate("_files")
         .exec(function(err, user) {
         if (err) {
@@ -42,7 +42,7 @@ module.exports = function(router) {
       });
     })
     .delete(function(req, res) {
-      User.findOne({_id: req.params.user})
+      User.findOne({username: req.params.user})
         .populate("_files")
         .exec(function(err, user) {
           if (err) {
@@ -50,7 +50,7 @@ module.exports = function(router) {
           } else {
             if (user) {
               var s3params = {
-                Bucket: "colincolt/" + user._id,
+                Bucket: "colincolt/" + user.username,
                 Delete: {
                   Objects:[]
                 }
@@ -60,7 +60,7 @@ module.exports = function(router) {
                 s3.deleteBucket({Bucket: "colincolt"}, function(err) {
                   if (err) res.status(500).json({msg: "server error"});
                   else {
-                    User.remove({_id: user._id}, function(err) {
+                    User.remove({username: user.username}, function(err) {
                       res.json(user);
                     });
                   }
@@ -69,19 +69,19 @@ module.exports = function(router) {
                 // Iterate over file names, adding them to s3params
                 for (var i = 0; i< user._files.length; i++) {
                   s3params["Delete"]["Objects"].push({
-                    Key: user._id + "/" + user._files[i].name
+                    Key: user.username + "/" + user._files[i].name
                   });
                 }
                 s3.deleteObjects(s3params, function(err, data) {
                   if (err) res.status(500).json({msg: "server error"});
                   else {
-                    s3.deleteBucket({Bucket: "colincolt/" + user._id}, function(err) {
+                    s3.deleteBucket({Bucket: "colincolt/" + user.username}, function(err) {
                       if (err) res.status(500).json({msg: "server error"});
                       else {
                         File.remove({_userId: user._id}, function(err) {
                           if (err) res.status(500).json({msg: "server error"});
                           else {
-                            User.remove({_id: user._id}, function(err) {
+                            User.remove({username: user.username}, function(err) {
                               res.json(user);
                             });
                           }
@@ -122,7 +122,7 @@ module.exports = function(router) {
           }
         } else {
           //Create the S3 bucket
-          s3.createBucket({Bucket: "colincolt/" + user._id}, function(err, data) {
+          s3.createBucket({Bucket: "colincolt/" + user.username}, function(err, data) {
             if (err) {
               res.status(500).json({msg: "server error"});
             } else {
