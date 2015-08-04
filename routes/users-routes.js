@@ -35,13 +35,13 @@ module.exports = function(router) {
     .put(function(req, res) {
       var oldUsername = req.params.user;
       var newUsername = req.body.username;
-      var filesToMove = [];
+      var filesToRename = [];
+      var filesCopied = 0;
 
       User.findOne({username: req.params.user})
         .populate("_files")
         .exec(function(err, user) {
-          filesToMove = user._files;
-          console.log(filesToMove)
+          filesToRename = user._files;
           User.update({username: oldUsername}, {username: newUsername}, function(err) {
             if (err) res.status(500).json({msg: "server error"});
             else { ee.emit("userRenamed") }
@@ -50,7 +50,46 @@ module.exports = function(router) {
 
 
       ee.on("userRenamed", function() {
-        console.log("userRenamed")
+        for (var i = 0; i < filesToRename.length; i++) {
+          s3.copyObject({
+            Bucket: "colincolt",
+            CopySource: "colincolt/" + oldUsername + "/" + filesToRename[i].name,
+            Key: newUsername + "/" + filesToRename[i].name,
+          }, function(err) {
+            if (err) res.status(500).json({msg: "server error"});
+            else {
+              filesCopied ++;
+              if (filesCopied === filesToRename.length) {
+                ee.emit("filesCopied");
+              }
+            }
+          });
+        }
+      });
+      ee.on("filesCopied", function() {
+        // Iterate over file names, adding them to s3params
+        var s3params = {
+          Bucket: "colincolt",
+          Delete: {
+            Objects:[]
+          }
+        }
+        for (var j = 0; j < filesToRename.length; j++) {
+          s3params["Delete"]["Objects"].push({
+            Key: oldUsername + "/" + filesToRename[j].name
+          })
+        }
+        s3.deleteObjects(s3params, function(err, data) {
+          if (err) res.status(500).json({msg: "server error"});
+          else {
+            User.findOne({username: newUsername}, function(err, userDoc) {
+              if (err) res.status(500).json({msg: "server error"});
+              else {
+                res.json(userDoc);
+              }
+            });
+          }
+        });
       });
     })
     .delete(function(req, res) {
@@ -79,7 +118,6 @@ module.exports = function(router) {
                     Key: user.username + "/" + user._files[i].name
                   });
                 }
-                console.log(s3params.Delete);
                 s3.deleteObjects(s3params, function(err, data) {
                   if (err) res.status(500).json({msg: "server error"});
                   else {

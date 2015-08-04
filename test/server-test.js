@@ -127,16 +127,16 @@ describe("RESTful API with S3 Integration: ", function() {
   });
 
   // Delete fileToRename
-  after(function(done) {
-    s3.deleteObject({
-      Bucket: "colincolt",
-      Key: "renamedUser/oldFile"
-    }, function(err, data) {
-      if (!err) {
-        done()
-      };
-    });
-  });
+  // after(function(done) {
+  //   s3.deleteObject({
+  //     Bucket: "colincolt",
+  //     Key: "renamedUser/oldFile"
+  //   }, function(err, data) {
+  //     if (!err) {
+  //       done()
+  //     };
+  //   });
+  // });
   // Unlink file created for tests
   after(function(done) {
     fs.unlink("oldFile.json", function(err) {
@@ -220,6 +220,7 @@ describe("RESTful API with S3 Integration: ", function() {
             .send({username: "renamedUser"})
             .end(function(err,res) {
               expect(res).to.have.status(200);
+              console.log(res.body);
               expect(res.body["username"]).to.eql("renamedUser");
               done();
             });
