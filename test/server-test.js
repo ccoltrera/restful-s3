@@ -127,16 +127,16 @@ describe("RESTful API with S3 Integration: ", function() {
   });
 
   // Delete fileToRename
-  // after(function(done) {
-  //   s3.deleteObject({
-  //     Bucket: "colincolt",
-  //     Key: "renamedUser/oldFile"
-  //   }, function(err, data) {
-  //     if (!err) {
-  //       done()
-  //     };
-  //   });
-  // });
+  after(function(done) {
+    s3.deleteObject({
+      Bucket: "colincolt",
+      Key: "renamedUser/fileToRename"
+    }, function(err, data) {
+      if (!err) {
+        done()
+      };
+    });
+  });
   // Unlink file created for tests
   after(function(done) {
     fs.unlink("oldFile.json", function(err) {
@@ -220,7 +220,6 @@ describe("RESTful API with S3 Integration: ", function() {
             .send({username: "renamedUser"})
             .end(function(err,res) {
               expect(res).to.have.status(200);
-              console.log(res.body);
               expect(res.body["username"]).to.eql("renamedUser");
               done();
             });
@@ -242,7 +241,16 @@ describe("RESTful API with S3 Integration: ", function() {
       describe("/files", function() {
         //GET request to /users/:user/files
         describe("GET", function() {
-
+          it("should respond with information for all files owned by a user, as a JSON array", function(done) {
+            chai.request("http://localhost:3000")
+              .get("/users/renamedUser/files")
+              .end(function(err, res) {
+                expect(res).to.have.status(200);
+                expect(res).to.be.json;
+                expect(res.body.length).to.eql(1);
+                done();
+              });
+          });
         });
         //POST request to /users/:user/files
         describe("POST", function() {

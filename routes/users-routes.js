@@ -12,8 +12,32 @@ var ee = new EventEmitter();
 
 module.exports = function(router) {
   // methods for /users/:user/files/:file
+  router.route("/:user/files/:file")
+    .get(function(req, res) {
+
+    })
+    .put(function(req, res) {
+
+    })
+    .delete(function(req, res) {
+
+    });
 
   // methods for /users/:user/files
+  router.route("/:user/files")
+    .get(function(req, res) {
+      User.findOne({username: req.params.user})
+        .populate("_files")
+        .exec(function(err, user) {
+          if (err) res.status(500).json({msg: "server error"});
+          else {
+            res.json(user._files)
+          }
+        });
+    })
+    .post(function(req, res) {
+
+    });
 
   // methods for /users/:user
   router.route("/:user")
@@ -21,15 +45,15 @@ module.exports = function(router) {
       User.findOne({username: req.params.user})
         .populate("_files")
         .exec(function(err, user) {
-        if (err) {
-          res.status(500).json({msg: "server error"});
-        } else {
-          if (user) {
-            res.json(user);
+          if (err) {
+            res.status(500).json({msg: "server error"});
           } else {
-            res.status(404).json({msg: "no such user"})
+            if (user) {
+              res.json(user);
+            } else {
+              res.status(404).json({msg: "no such user"})
+            }
           }
-        }
       });
     })
     .put(function(req, res) {
