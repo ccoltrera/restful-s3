@@ -254,7 +254,16 @@ describe("RESTful API with S3 Integration: ", function() {
         });
         //POST request to /users/:user/files
         describe("POST", function() {
-
+          it("should add a posted file to S3, under the user's username, and return the File doc from mongoose", function(done) {
+            chai.request("http://localhost:3000")
+              .post("/users/newUser/files")
+              .send({name: "newFile", content:"oh my goodness, such content"})
+              .end(function(err, res) {
+                expect(res).to.have.status(200);
+                expect(res.body.name).to.eql("newFile");
+                done();
+              });
+          });
         });
 
         describe("/:file", function() {

@@ -36,7 +36,33 @@ module.exports = function(router) {
         });
     })
     .post(function(req, res) {
-
+      User.findOne({username: req.params.user})
+        .exec(function(err, userDoc) {
+          if (err) res.status(500).json({msg: "server error"});
+          else {
+            File.create({name: req.body.name, _userId: userDoc._id}, function(err, fileDoc) {
+              if (err) res.status(500).json({msg: "server error"});
+              else {
+                userDoc._files.push(fileDoc._id);
+                userDoc.save(function(err) {
+                  if (err) res.status(500).json({msg: "server error"});
+                  else {
+                    s3.putObject({
+                      Bucket: "colincolt",
+                      Key: req.params.user + "/" + req.body.name,
+                      Body: req.body.content
+                    }, function(err, data) {
+                      if(err) res.status(500).json({msg: "server error"});
+                      else {
+                        res.send(fileDoc);
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
     });
 
   // methods for /users/:user
