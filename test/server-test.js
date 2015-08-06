@@ -39,6 +39,11 @@ var oldFile = {
   name: "oldFile"
 };
 
+var oldFile2 = {
+  name: "oldFile"
+};
+
+
 describe("RESTful API with S3 Integration: ", function() {
   // Ensure tests wait until DB connection is open
   before(function(done) {
@@ -67,13 +72,16 @@ describe("RESTful API with S3 Integration: ", function() {
     // Add userToRename to the DB
     User.create(userToRename, function(err, user) {
       fileToRename._userId = user._id;
+      oldFile2._userId = user._id;
       // Ensure indexing is done, so that unique _ids will be properly enforced
       User.ensureIndexes(function(err) {
         // Add fileToRename as userToRename's file
-        File.create(fileToRename, function(err, file) {
-          // Link userToRename to fileToRename
-          User.update({_id: user._id}, { $push: { _files: file._id }}, function(err) {
-            if (!err) done();
+        File.create(fileToRename, function(err, file1) {
+          File.create(oldFile2, function(err, file2) {
+            // Link userToRename to fileToRename and oldFile
+            User.update({_id: user._id}, { $pushAll: { _files: [file1._id, file2._id] }}, function(err) {
+              if (!err) done();
+            });
           });
         });
       });
@@ -115,6 +123,17 @@ describe("RESTful API with S3 Integration: ", function() {
       if(!err) done();
     });
   });
+  // Upload oldFile for GET testing
+  before(function(done) {
+    var fileStream = fs.createReadStream("./oldFile.json");
+    s3.putObject({
+      Bucket: "colincolt",
+      Key: userToRename.username + "/oldFile",
+      Body: fileStream
+    }, function(err, data) {
+      if(!err) done();
+    });
+  });
 
   // Wipe DB after the tests
   // Shut down server and DB connection
@@ -131,6 +150,17 @@ describe("RESTful API with S3 Integration: ", function() {
     s3.deleteObject({
       Bucket: "colincolt",
       Key: "renamedUser/renamedFile"
+    }, function(err, data) {
+      if (!err) {
+        done()
+      };
+    });
+  });
+  // Delete oldFile
+  after(function(done) {
+    s3.deleteObject({
+      Bucket: "colincolt",
+      Key: "renamedUser/oldFile"
     }, function(err, data) {
       if (!err) {
         done()
@@ -247,7 +277,7 @@ describe("RESTful API with S3 Integration: ", function() {
               .end(function(err, res) {
                 expect(res).to.have.status(200);
                 expect(res).to.be.json;
-                expect(res.body.length).to.eql(1);
+                expect(res.body.length).to.eql(2);
                 done();
               });
           });
@@ -281,7 +311,15 @@ describe("RESTful API with S3 Integration: ", function() {
         describe("/:file", function() {
           //GET request to /users/:user/files/:file
           describe("GET", function() {
-
+            it("should return the file from S3", function(done) {
+              chai.request("http://localhost:3000")
+                .get("/users/renamedUser/files/oldFile")
+                .end(function(err, res) {
+                  expect(res).to.have.status(200);
+                  expect(res.text).to.eql(fs.readFileSync("./oldFile.json").toString());
+                  done();
+                });
+            });
           });
           //PUT request to /users/:user/files/:file
           describe("PUT", function() {

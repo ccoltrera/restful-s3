@@ -14,7 +14,15 @@ module.exports = function(router) {
   // methods for /users/:user/files/:file
   router.route("/:user/files/:file")
     .get(function(req, res) {
-
+      s3.getObject({
+        Bucket: "colincolt",
+        Key: req.params.user + "/" + req.params.file
+      }, function(err, data) {
+        if (err) res.sendStatus(err.statusCode);
+        else {
+          res.send(data.Body.toString());
+        }
+      });
     })
     .put(function(req, res) {
       User.findOne({username: req.params.user})
