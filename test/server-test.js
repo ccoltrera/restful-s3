@@ -265,6 +265,18 @@ describe("RESTful API with S3 Integration: ", function() {
               });
           });
         });
+        //DELETE request to /users/:user/files/
+        describe("DELETE", function() {
+          it("should delete all files of a user, in Mongo and S3, and return the user's updated doc", function(done) {
+            chai.request("http://localhost:3000")
+              .del("/users/newUser/files")
+              .end(function(err, res) {
+                expect(res).to.have.status(200);
+                expect(res.body._files.length).to.eql(0);
+                done();
+              });
+          });
+        });
 
         describe("/:file", function() {
           //GET request to /users/:user/files/:file
@@ -273,10 +285,6 @@ describe("RESTful API with S3 Integration: ", function() {
           });
           //PUT request to /users/:user/files/:file
           describe("PUT", function() {
-
-          });
-          //DELETE request to /users/:user/files/:file
-          describe("DELETE", function() {
 
           });
         });

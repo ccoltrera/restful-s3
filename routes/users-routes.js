@@ -18,9 +18,6 @@ module.exports = function(router) {
     })
     .put(function(req, res) {
 
-    })
-    .delete(function(req, res) {
-
     });
 
   // methods for /users/:user/files
@@ -63,6 +60,40 @@ module.exports = function(router) {
             });
           }
         });
+    })
+    .delete(function(req, res) {
+      User.findOne({username: req.params.user})
+      .populate("_files")
+      .exec(function(err, userDoc) {
+        var s3params = {
+          Bucket: "colincolt",
+          Delete: {
+            Objects:[]
+          }
+        };
+        for (var i = 0; i< userDoc._files.length; i++) {
+          s3params["Delete"]["Objects"].push({
+            Key: userDoc.username + "/" + userDoc._files[i].name
+          });
+        }
+        s3.deleteObjects(s3params, function(err, data) {
+          if (err) res.status(500).json({msg: "server error"});
+          else {
+            File.remove({_userId: userDoc._id}, function(err) {
+              if (err) res.status(500).json({msg: "server error"});
+              else {
+                userDoc._files = [];
+                userDoc.save(function(err) {
+                  if (err) res.status(500).json({msg: "server error"});
+                  else {
+                    res.send(userDoc);
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
     });
 
   // methods for /users/:user
