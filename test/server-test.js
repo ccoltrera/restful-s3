@@ -130,7 +130,7 @@ describe("RESTful API with S3 Integration: ", function() {
   after(function(done) {
     s3.deleteObject({
       Bucket: "colincolt",
-      Key: "renamedUser/fileToRename"
+      Key: "renamedUser/renamedFile"
     }, function(err, data) {
       if (!err) {
         done()
@@ -285,7 +285,17 @@ describe("RESTful API with S3 Integration: ", function() {
           });
           //PUT request to /users/:user/files/:file
           describe("PUT", function() {
-
+            it("should take a new filename for the file, rename the file in Mongo and on S3, and return the File doc", function(done) {
+              chai.request("http://localhost:3000")
+                .put("/users/renamedUser/files/fileToRename")
+                .send({name: "renamedFile"})
+                .end(function(err, res) {
+                  expect(res).to.have.status(200);
+                  expect(err).to.be.null;
+                  expect(res.body.name).to.eql("renamedFile");
+                  done();
+                });
+            });
           });
         });
       });

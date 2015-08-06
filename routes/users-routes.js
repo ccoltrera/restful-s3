@@ -17,7 +17,46 @@ module.exports = function(router) {
 
     })
     .put(function(req, res) {
-
+      User.findOne({username: req.params.user})
+        .populate("_files")
+        .exec(function(err, userDoc) {
+          if (err) res.status(500).json({msg: "server error"});
+          else {
+            var fileId = "";
+            for (var i = 0; i < userDoc._files.length; i++) {
+              if (userDoc._files[i].name === req.params.file) {
+                fileId = userDoc._files[i]._id;
+              }
+            }
+            if (fileId) {
+              File.findByIdAndUpdate(fileId, {name: req.body.name}, {new: true}, function(err, fileDoc) {
+                if (err) res.status(500).json({msg: "server error"});
+                else {
+                  s3.copyObject({
+                    Bucket: "colincolt",
+                    CopySource: "colincolt/" + req.params.user + "/" + req.params.file,
+                    Key: req.params.user + "/" + req.body.name,
+                  }, function(err) {
+                    if (err) res.status(500).json({msg: "server error"});
+                    else {
+                        s3.deleteObject({
+                          Bucket: "colincolt",
+                          Key: req.params.user + "/" + req.params.file
+                        }, function(err, data) {
+                          if (err) res.status(500).json({msg: "server error"});
+                          else {
+                            res.send(fileDoc);
+                          }
+                        });
+                    }
+                  });
+                }
+              });
+            } else {
+              res.status(404).json({msg: "file not found"});
+            }
+          }
+        });
     });
 
   // methods for /users/:user/files
